@@ -4,6 +4,9 @@ import TopNavbar from './components/TopNavbar';
 import Dashboard from './pages/Dashboard';
 import UserList from './pages/UserList';
 import AddUser from './pages/AddUser';
+import AddCustomer from './pages/AddCustomer';
+import CustomerList from './pages/CustomerList';
+import EditCustomer from './pages/EditCustomer';
 import Login from './pages/Login';
 import './App.css';
 
@@ -34,6 +37,8 @@ export default function App() {
   const [activePage, setActivePage] = useState('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [users, setUsers] = useState(INITIAL_USERS);
+  const [customers, setCustomers] = useState([]);
+  const [editingCustomer, setEditingCustomer] = useState(null);
   const [stats, setStats] = useState(INITIAL_STATS);
   const [activityLog, setActivityLog] = useState(INITIAL_ACTIVITY);
   const [toast, setToast] = useState(null);
@@ -81,9 +86,26 @@ export default function App() {
       });
   };
 
+  const fetchCustomers = () => {
+    fetch('/api/customers')
+      .then((res) => {
+        if (!res.ok) throw new Error('Failed to fetch customers');
+        return res.json();
+      })
+      .then((data) => {
+        if (data.status === 'success') {
+          setCustomers(data.customers);
+        }
+      })
+      .catch((err) => {
+        console.error('Error fetching customers:', err);
+      });
+  };
+
   useEffect(() => {
     if (isLoggedIn) {
       fetchUsers();
+      fetchCustomers();
     }
   }, [isLoggedIn]);
 
@@ -197,6 +219,129 @@ export default function App() {
       });
   };
 
+  const handleAddCustomer = (newCustomerData) => {
+    fetch('/api/add_customer', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(newCustomerData)
+    })
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.message || 'Failed to create customer');
+        }
+        return data;
+      })
+      .then((data) => {
+        if (data.status === 'success') {
+          showToast('success', `Customer ${newCustomerData.name} added successfully.`);
+          fetchCustomers();
+          setActivePage('customers');
+
+          const now = new Date();
+          setActivityLog(logs => [
+            {
+              action: 'INSERT',
+              module: 'customers',
+              entity_type: 'customer',
+              title: `Customer added: ${newCustomerData.name} (${newCustomerData.mobile_no})`,
+              timestamp: now.toTimeString().split(' ')[0]
+            },
+            ...logs
+          ]);
+        } else {
+          showToast('error', data.message || 'Failed to add customer.');
+        }
+      })
+      .catch((err) => {
+        showToast('error', err.message);
+      });
+  };
+
+  const handleEditCustomer = (updatedCustomerData) => {
+    fetch('/api/edit_customer', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(updatedCustomerData)
+    })
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.message || 'Failed to update customer');
+        }
+        return data;
+      })
+      .then((data) => {
+        if (data.status === 'success') {
+          showToast('success', `Customer ${updatedCustomerData.name} updated successfully.`);
+          fetchCustomers();
+          setActivePage('customers');
+          setEditingCustomer(null);
+
+          const now = new Date();
+          setActivityLog(logs => [
+            {
+              action: 'UPDATE',
+              module: 'customers',
+              entity_type: 'customer',
+              title: `Customer updated: ${updatedCustomerData.name} (${updatedCustomerData.mobile_no})`,
+              timestamp: now.toTimeString().split(' ')[0]
+            },
+            ...logs
+          ]);
+        } else {
+          showToast('error', data.message || 'Failed to update customer.');
+        }
+      })
+      .catch((err) => {
+        showToast('error', err.message);
+      });
+  };
+
+  const handleDeleteCustomer = (customerID) => {
+    const custToDelete = customers.find(c => c.CustomerID === customerID);
+    if (!custToDelete) return;
+    if (window.confirm(`Are you sure you want to permanently delete customer ${custToDelete.name}?`)) {
+      fetch('/api/remove_customer', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ customerID })
+      })
+        .then((res) => {
+          if (!res.ok) throw new Error('Failed to delete customer');
+          return res.json();
+        })
+        .then((data) => {
+          if (data.status === 'success') {
+            showToast('error', `Customer ${custToDelete.name} has been deleted.`);
+            fetchCustomers();
+            const now = new Date();
+            setActivityLog(logs => [
+              {
+                action: 'DELETE',
+                module: 'customers',
+                entity_type: 'customer',
+                title: `Customer deleted: ${custToDelete.name} (${custToDelete.mobile_no})`,
+                timestamp: now.toTimeString().split(' ')[0]
+              },
+              ...logs
+            ]);
+          } else {
+            showToast('error', data.message || 'Failed to delete customer.');
+          }
+        })
+        .catch((err) => {
+          showToast('error', err.message);
+        });
+    }
+  };
+
   if (!isLoggedIn) {
     return (
       <div className="login-root">
@@ -276,8 +421,38 @@ export default function App() {
             />
           )}
 
+          {activePage === 'customers' && (
+            <CustomerList
+              customers={customers}
+              onDeleteCustomer={handleDeleteCustomer}
+              onAddCustomerClick={() => setActivePage('add-customer')}
+              onEditCustomerClick={(c) => {
+                setEditingCustomer(c);
+                setActivePage('edit-customer');
+              }}
+            />
+          )}
+
+          {activePage === 'add-customer' && (
+            <AddCustomer
+              onAddCustomer={handleAddCustomer}
+              onCancel={() => setActivePage('customers')}
+            />
+          )}
+
+          {activePage === 'edit-customer' && (
+            <EditCustomer
+              customer={editingCustomer}
+              onEditCustomer={handleEditCustomer}
+              onCancel={() => {
+                setEditingCustomer(null);
+                setActivePage('customers');
+              }}
+            />
+          )}
+
           {/* Under construction fallbacks for other menus */}
-          {activePage !== 'dashboard' && activePage !== 'users' && activePage !== 'add-user' && (
+          {activePage !== 'dashboard' && activePage !== 'users' && activePage !== 'add-user' && activePage !== 'customers' && activePage !== 'add-customer' && activePage !== 'edit-customer' && (
             <div className="row justify-content-center align-items-center py-5">
               <div className="col-12 col-md-8 col-lg-6 text-center">
                 <div className="card border-0 shadow-sm p-5" style={{ borderRadius: '16px' }}>

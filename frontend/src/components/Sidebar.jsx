@@ -3,6 +3,7 @@ import React from 'react';
 const SIDEBAR_ITEMS = [
   { key: 'dashboard', icon: 'fas fa-tachometer-alt', label: 'Dashboard' },
   { key: 'users', icon: 'fas fa-users-cog', label: 'Users' },
+  { key: 'customers', icon: 'fas fa-address-book', label: 'Customers' },
   { key: 'vehicle', icon: 'fas fa-bus', label: 'Vehicle' },
 ];
 
@@ -20,7 +21,10 @@ export default function Sidebar({ collapsed, activePage, onChangePage, onLogout 
       <nav className="sidebar-nav">
         <ul className="nav flex-column">
           {SIDEBAR_ITEMS.map((item) => {
-            const isPageActive = activePage === item.key || (item.key === 'users' && activePage === 'add-user');
+            const isPageActive = 
+              activePage === item.key || 
+              (item.key === 'users' && activePage === 'add-user') ||
+              (item.key === 'customers' && (activePage === 'add-customer' || activePage === 'edit-customer'));
             return (
               <li className="nav-item" key={item.key}>
                 <a

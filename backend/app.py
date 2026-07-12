@@ -37,6 +37,13 @@ def create_app(test_config=None):
     app = Flask(__name__)
     CORS(app)  # Enable Cross-Origin Resource Sharing for all origins
     
+    # Initialize DB tables
+    from db import init_db
+    try:
+        init_db()
+    except Exception as e:
+        print(f"Database initialization error: {e}")
+
     app.config.from_mapping(
         SECRET_KEY=os.environ.get('SECRET_KEY', 'dev'),
     )

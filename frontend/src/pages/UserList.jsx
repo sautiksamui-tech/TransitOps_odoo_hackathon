@@ -41,11 +41,11 @@ export default function UserList({ users, onToggleStatus, onDeleteUser, onAddUse
       {/* Page Header */}
       <div className="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
         <div>
-          <h5 className="mb-0 fw-bold"><i className="fas fa-users me-2 text-primary"></i>User Management</h5>
-          <p className="text-muted small mb-0 mt-1">Manage operator and crew access accounts for TransitOps</p>
+          <h5 className="mb-0 fw-bold"><i className="fas fa-users-cog me-2 text-primary"></i>Operator Management</h5>
+          <p className="text-muted small mb-0 mt-1">Manage system operators and control room personnel</p>
         </div>
         <button className="btn btn-primary" onClick={onAddUserClick}>
-          <i className="fas fa-user-plus me-2"></i>Add New User
+          <i className="fas fa-user-plus me-2"></i>Add Operator
         </button>
       </div>
 
@@ -54,8 +54,8 @@ export default function UserList({ users, onToggleStatus, onDeleteUser, onAddUse
         <div className="col-6 col-md-3">
           <div className="stat-card stat-blue text-center py-3">
             <h4 className="mb-0">{totalUsers}</h4>
-            <p className="mb-0 small">Total Users</p>
-            <i className="fas fa-users stat-icon"></i>
+            <p className="mb-0 small">Total Operators</p>
+            <i className="fas fa-users-shield stat-icon"></i>
           </div>
         </div>
         {Object.entries(roleCounts).map(([roleName, count], idx) => {
@@ -75,13 +75,13 @@ export default function UserList({ users, onToggleStatus, onDeleteUser, onAddUse
 
       {/* Users Table Card */}
       <div className="card border-0 shadow-sm">
-        <div className="card-header d-flex align-items-center justify-content-between bg-transparent">
-          <span className="fw-semibold"><i className="fas fa-list me-2"></i>All Users ({filteredUsers.length})</span>
+        <div className="card-header d-flex align-items-center justify-content-between bg-transparent py-3">
+          <span className="fw-semibold"><i className="fas fa-list me-2"></i>All Operators ({filteredUsers.length})</span>
           <input
             type="text"
             className="form-control form-control-sm"
             style={{ maxWidth: '220px' }}
-            placeholder="🔍 Search..."
+            placeholder="🔍 Search Operators..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -93,19 +93,18 @@ export default function UserList({ users, onToggleStatus, onDeleteUser, onAddUse
                 <tr>
                   <th style={{ width: '5%' }}>#</th>
                   <th style={{ width: '30%' }}>Name</th>
-                  <th style={{ width: '25%' }}>Email / Phone</th>
-                  <th style={{ width: '15%' }}>Role</th>
+                  <th style={{ width: '25%' }}>Email Address</th>
+                  <th style={{ width: '20%' }}>Role</th>
                   <th style={{ width: '10%' }}>Status</th>
-                  <th style={{ width: '10%' }}>Added</th>
-                  <th style={{ width: '5%' }} className="text-end">Actions</th>
+                  <th style={{ width: '10%' }} className="text-end">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredUsers.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="text-center text-muted py-5">
-                      <i className="fas fa-users fa-2x mb-2 d-block opacity-25"></i>
-                      No users found.
+                    <td colSpan="6" className="text-center text-muted py-5">
+                      <i className="fas fa-users-cog fa-2x mb-2 d-block opacity-25"></i>
+                      No operators found.
                     </td>
                   </tr>
                 ) : (
@@ -119,26 +118,20 @@ export default function UserList({ users, onToggleStatus, onDeleteUser, onAddUse
                             <div
                               className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
                               style={{
-                                width: '36px',
-                                height: '36px',
+                                width: '34px',
+                                height: '34px',
                                 background: 'linear-gradient(135deg,#667eea,#764ba2)',
                               }}
                             >
                               <span className="text-white fw-bold small">{u.name.charAt(0).toUpperCase()}</span>
                             </div>
                             <div>
-                              <strong>{u.name}</strong>
-                              {u.linkedStaff && (
-                                <span className="d-block small text-muted">
-                                  Linked Crew: {u.linkedStaff}
-                                </span>
-                              )}
+                              <strong className="text-dark">{u.name}</strong>
                             </div>
                           </div>
                         </td>
                         <td>
                           <div>{u.email}</div>
-                          {u.phone && <small className="text-muted">{u.phone}</small>}
                         </td>
                         <td>
                           <span className={`badge ${getRoleBadgeClass(u.role)}`}>
@@ -150,23 +143,17 @@ export default function UserList({ users, onToggleStatus, onDeleteUser, onAddUse
                             {u.status}
                           </span>
                         </td>
-                        <td className="text-muted small">{u.addedDate}</td>
                         <td className="text-end">
                           <div className="d-flex gap-1 justify-content-end align-items-center">
-                            {u.role === 'Driver / Crew' && (
-                              <button className="btn btn-xs btn-outline-dark" title="Assign Routes">
-                                <i className="fas fa-route me-1"></i>Assign
-                              </button>
-                            )}
                             <button
-                              className={`btn btn-xs ${isActive ? 'btn-outline-warning' : 'btn-outline-success'} toggle-status`}
+                              className={`btn btn-xs ${isActive ? 'btn-outline-warning' : 'btn-outline-success'}`}
                               onClick={() => onToggleStatus(u.id)}
                               title={isActive ? 'Deactivate' : 'Activate'}
                             >
                               <i className={`fas ${isActive ? 'fa-ban' : 'fa-check'}`}></i>
                             </button>
                             <button
-                              className="btn btn-xs btn-outline-danger delete-user"
+                              className="btn btn-xs btn-outline-danger"
                               onClick={() => onDeleteUser(u.id)}
                               title="Delete"
                             >
