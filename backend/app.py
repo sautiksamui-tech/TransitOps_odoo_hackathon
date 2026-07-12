@@ -60,6 +60,22 @@ def create_app(test_config=None):
         except Exception as e:
             return {"status": "error", "message": str(e)}, 500
 
+    @app.route('/api/users', methods=['GET'])
+    def get_users():
+        from db import get_db_connection
+        try:
+            with get_db_connection() as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute("""
+                        SELECT u.ID, u.email, u.roleID, r.RoleName 
+                        FROM users u
+                        LEFT JOIN role r ON u.roleID = r.roleID;
+                    """)
+                    users = cursor.fetchall()
+            return {"status": "success", "users": users}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}, 500
+
     @app.route('/api/login', methods=['POST'])
     def login():
         from db import get_db_connection
