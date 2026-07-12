@@ -870,6 +870,76 @@ def create_app(test_config=None):
         except Exception as e:
             return {"status": "error", "message": str(e)}, 500
 
+    @app.route('/api/dashboard_stats', methods=['GET'])
+    def get_dashboard_stats():
+        from db import get_db_connection
+        try:
+            with get_db_connection() as conn:
+                with conn.cursor() as cursor:
+                    # Count users
+                    cursor.execute("SELECT COUNT(*) as count FROM users;")
+                    users_count = cursor.fetchone()['count']
+                    
+                    # Count customers
+                    cursor.execute("SELECT COUNT(*) as count FROM Customer;")
+                    customers_count = cursor.fetchone()['count']
+                    
+                    # Count vehicles
+                    cursor.execute("SELECT COUNT(*) as count FROM vehicle;")
+                    vehicles_count = cursor.fetchone()['count']
+                    
+                    # Count trips
+                    cursor.execute("SELECT COUNT(*) as count FROM Trip;")
+                    trips_count = cursor.fetchone()['count']
+                    
+                    # Vehicle status counts
+                    cursor.execute("SELECT status, COUNT(*) as count FROM vehicle GROUP BY status;")
+                    vehicle_status = cursor.fetchall()
+                    
+                    # Vehicle fuel counts
+                    cursor.execute("SELECT fuel_type, COUNT(*) as count FROM vehicle GROUP BY fuel_type;")
+                    vehicle_fuel = cursor.fetchall()
+                    
+                    # Trip status counts
+                    cursor.execute("SELECT status, COUNT(*) as count, SUM(cargo_weight) as total_weight FROM Trip GROUP BY status;")
+                    trip_status = cursor.fetchall()
+                    
+                    # Fetch recent trips to show on dashboard
+                    cursor.execute("""
+                        SELECT t.ID, t.cargo_weight, t.status, v.plate_no
+                        FROM Trip t
+                        LEFT JOIN vehicle v ON t.VehicleID = v.VehicleID
+                        ORDER BY t.ID DESC LIMIT 5;
+                    """)
+                    recent_trips = cursor.fetchall()
+                    for rt in recent_trips:
+                        if rt['cargo_weight'] is not None:
+                            rt['cargo_weight'] = float(rt['cargo_weight'])
+                            
+            # Process outputs to ensure floats are serialized correctly
+            for ts in trip_status:
+                if ts['total_weight'] is not None:
+                    ts['total_weight'] = float(ts['total_weight'])
+                    
+            return {
+                "status": "success",
+                "stats": {
+                    "users": users_count,
+                    "customers": customers_count,
+                    "vehicles": vehicles_count,
+                    "trips": trips_count,
+                    "vehicle_status": vehicle_status,
+                    "vehicle_fuel": vehicle_fuel,
+                    "trip_status": trip_status,
+                    "recent_trips": recent_trips
+                }
+            }
+        except Exception as e:
+            import traceback
+            with open('error.log', 'w') as f:
+                f.write(traceback.format_exc())
+            return {"status": "error", "message": str(e)}, 500
+
     # --- Trip CRUD APIs ---
 
     @app.route('/api/trip_list', methods=['GET'])
@@ -879,14 +949,16 @@ def create_app(test_config=None):
             with get_db_connection() as conn:
                 with conn.cursor() as cursor:
                     cursor.execute("""
-                        SELECT t.ID, t.source_ID, t.dest_ID, t.VehicleID, t.cargo_weight, t.status,
+                        SELECT t.ID, t.source_ID, t.dest_ID, t.VehicleID, t.DriverID, t.cargo_weight, t.status,
                                s.house_no AS source_house, s.area AS source_area, s.pincode AS source_pincode, s.town AS source_town, s.state AS source_state,
                                d.house_no AS dest_house, d.area AS dest_area, d.pincode AS dest_pincode, d.town AS dest_town, d.state AS dest_state,
-                               v.plate_no, v.maxloadcapacity
+                               v.plate_no, v.maxloadcapacity,
+                               dr.name AS driver_name
                         FROM Trip t
                         LEFT JOIN address s ON t.source_ID = s.ID
                         LEFT JOIN address d ON t.dest_ID = d.ID
-                        LEFT JOIN vehicle v ON t.VehicleID = v.VehicleID;
+                        LEFT JOIN vehicle v ON t.VehicleID = v.VehicleID
+                        LEFT JOIN driver dr ON t.DriverID = dr.DriverID;
                     """)
                     trips = cursor.fetchall()
                     for t in trips:
@@ -904,6 +976,7 @@ def create_app(test_config=None):
         source_id = data.get('source_ID') or request.args.get('source_ID')
         dest_id = data.get('dest_ID') or request.args.get('dest_ID')
         vehicle_id = data.get('VehicleID') or request.args.get('VehicleID')
+        driver_id = data.get('DriverID') or request.args.get('DriverID')
         cargo_weight = data.get('cargo_weight') or request.args.get('cargo_weight')
         status = data.get('status') or request.args.get('status', 'pending')
         
@@ -937,8 +1010,8 @@ def create_app(test_config=None):
                                 }, 400
                                 
                     cursor.execute(
-                        "INSERT INTO Trip (source_ID, dest_ID, VehicleID, cargo_weight, status) VALUES (%s, %s, %s, %s, %s);",
-                        (source_id, dest_id, vehicle_id, cargo_weight, status)
+                        "INSERT INTO Trip (source_ID, dest_ID, VehicleID, DriverID, cargo_weight, status) VALUES (%s, %s, %s, %s, %s, %s);",
+                        (source_id, dest_id, vehicle_id, driver_id, cargo_weight, status)
                     )
                     trip_id = cursor.lastrowid
             return {
@@ -949,6 +1022,7 @@ def create_app(test_config=None):
                     "source_ID": source_id,
                     "dest_ID": dest_id,
                     "VehicleID": vehicle_id,
+                    "DriverID": driver_id,
                     "cargo_weight": cargo_weight,
                     "status": status
                 }
@@ -965,6 +1039,7 @@ def create_app(test_config=None):
         source_id = data.get('source_ID') or request.args.get('source_ID')
         dest_id = data.get('dest_ID') or request.args.get('dest_ID')
         vehicle_id = data.get('VehicleID') or request.args.get('VehicleID')
+        driver_id = data.get('DriverID') or request.args.get('DriverID')
         cargo_weight = data.get('cargo_weight') or request.args.get('cargo_weight')
         status = data.get('status') or request.args.get('status')
         
@@ -983,6 +1058,7 @@ def create_app(test_config=None):
                     new_source = source_id if source_id is not None else trip['source_ID']
                     new_dest = dest_id if dest_id is not None else trip['dest_ID']
                     new_vehicle = vehicle_id if vehicle_id is not None else trip.get('VehicleID')
+                    new_driver = driver_id if driver_id is not None else trip.get('DriverID')
                     new_weight = cargo_weight if cargo_weight is not None else trip['cargo_weight']
                     new_status = status if status is not None else trip.get('status', 'pending')
                     
@@ -1010,8 +1086,8 @@ def create_app(test_config=None):
                                 }, 400
                                 
                     cursor.execute(
-                        "UPDATE Trip SET source_ID=%s, dest_ID=%s, VehicleID=%s, cargo_weight=%s, status=%s WHERE ID=%s;",
-                        (new_source, new_dest, new_vehicle, new_weight, new_status, trip_id)
+                        "UPDATE Trip SET source_ID=%s, dest_ID=%s, VehicleID=%s, DriverID=%s, cargo_weight=%s, status=%s WHERE ID=%s;",
+                        (new_source, new_dest, new_vehicle, new_driver, new_weight, new_status, trip_id)
                     )
             return {
                 "status": "success",
@@ -1021,6 +1097,7 @@ def create_app(test_config=None):
                     "source_ID": new_source,
                     "dest_ID": new_dest,
                     "VehicleID": new_vehicle,
+                    "DriverID": new_driver,
                     "cargo_weight": new_weight,
                     "status": new_status
                 }
