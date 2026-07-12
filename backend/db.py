@@ -149,11 +149,13 @@ def init_db():
             source_ID INT NOT NULL,
             dest_ID INT NOT NULL,
             VehicleID INT,
+            DriverID INT,
             cargo_weight DECIMAL(10, 2),
             status VARCHAR(20) DEFAULT 'pending',
             FOREIGN KEY (source_ID) REFERENCES address(ID) ON DELETE CASCADE,
             FOREIGN KEY (dest_ID) REFERENCES address(ID) ON DELETE CASCADE,
-            FOREIGN KEY (VehicleID) REFERENCES vehicle(VehicleID) ON DELETE SET NULL
+            FOREIGN KEY (VehicleID) REFERENCES vehicle(VehicleID) ON DELETE SET NULL,
+            FOREIGN KEY (DriverID) REFERENCES driver(DriverID) ON DELETE SET NULL
         ) ENGINE=InnoDB;
         """
     ]
@@ -169,6 +171,11 @@ def init_db():
         try:
             cursor.execute("ALTER TABLE Trip ADD COLUMN VehicleID INT;")
             cursor.execute("ALTER TABLE Trip ADD FOREIGN KEY (VehicleID) REFERENCES vehicle(VehicleID) ON DELETE SET NULL;")
+        except Exception:
+            pass
+        try:
+            cursor.execute("ALTER TABLE Trip ADD COLUMN DriverID INT;")
+            cursor.execute("ALTER TABLE Trip ADD FOREIGN KEY (DriverID) REFERENCES driver(DriverID) ON DELETE SET NULL;")
         except Exception:
             pass
         try:

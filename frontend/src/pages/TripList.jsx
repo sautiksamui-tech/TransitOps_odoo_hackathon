@@ -28,10 +28,12 @@ export default function TripList({
     const sourceStr = `${t.source_house || ''} ${t.source_area || ''} ${t.source_town || ''} ${t.source_state || ''}`.toLowerCase();
     const destStr = `${t.dest_house || ''} ${t.dest_area || ''} ${t.dest_town || ''} ${t.dest_state || ''}`.toLowerCase();
     const plateStr = (t.plate_no || '').toLowerCase();
+    const driverStr = (t.driver_name || '').toLowerCase();
     return (
       sourceStr.includes(q) ||
       destStr.includes(q) ||
       plateStr.includes(q) ||
+      driverStr.includes(q) ||
       (t.status && t.status.toLowerCase().includes(q))
     );
   });
@@ -106,7 +108,7 @@ export default function TripList({
             type="text"
             className="form-control form-control-sm"
             style={{ maxWidth: '260px' }}
-            placeholder="🔍 Search location, plate, status..."
+            placeholder="🔍 Search location, plate, driver, status..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -117,18 +119,19 @@ export default function TripList({
               <thead className="table-light">
                 <tr>
                   <th style={{ width: '5%' }}>#</th>
-                  <th style={{ width: '25%' }}>Source / Origin Address</th>
-                  <th style={{ width: '25%' }}>Destination Address</th>
-                  <th style={{ width: '12%' }}>Assigned Vehicle</th>
+                  <th style={{ width: '22%' }}>Source / Origin Address</th>
+                  <th style={{ width: '22%' }}>Destination Address</th>
+                  <th style={{ width: '13%' }}>Vehicle</th>
+                  <th style={{ width: '13%' }}>Assigned Driver</th>
                   <th style={{ width: '10%' }}>Cargo Weight</th>
-                  <th style={{ width: '10%' }}>Status</th>
-                  <th style={{ width: '13%' }} className="text-end">Actions</th>
+                  <th style={{ width: '7%' }}>Status</th>
+                  <th style={{ width: '8%' }} className="text-end">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredTrips.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="text-center text-muted py-5">
+                    <td colSpan="8" className="text-center text-muted py-5">
                       <i className="fas fa-route fa-2x mb-2 d-block opacity-25"></i>
                       No trips scheduled in the dispatcher.
                     </td>
@@ -148,7 +151,7 @@ export default function TripList({
                           <i className="fas fa-map-marker-alt text-primary me-2"></i>
                           {t.source_town ? `${t.source_town}, ${t.source_state}` : 'Unknown Location'}
                         </div>
-                        <span className="small text-muted d-block ps-4 text-truncate" style={{ maxWidth: '280px' }}>
+                        <span className="small text-muted d-block ps-4 text-truncate" style={{ maxWidth: '240px' }}>
                           {t.source_house ? `${t.source_house}, ${t.source_area}` : 'N/A'}
                         </span>
                       </td>
@@ -163,7 +166,7 @@ export default function TripList({
                           <i className="fas fa-flag-checkered text-success me-2"></i>
                           {t.dest_town ? `${t.dest_town}, ${t.dest_state}` : 'Unknown Location'}
                         </div>
-                        <span className="small text-muted d-block ps-4 text-truncate" style={{ maxWidth: '280px' }}>
+                        <span className="small text-muted d-block ps-4 text-truncate" style={{ maxWidth: '240px' }}>
                           {t.dest_house ? `${t.dest_house}, ${t.dest_area}` : 'N/A'}
                         </span>
                       </td>
@@ -173,6 +176,18 @@ export default function TripList({
                             <strong className="text-dark"><i className="fas fa-truck text-muted me-1 small"></i>{t.plate_no}</strong>
                             <span className="small text-muted" style={{ fontSize: '.7rem' }}>
                               Cap: {t.maxloadcapacity ? `${t.maxloadcapacity} kg` : 'N/A'}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-muted small">Unassigned</span>
+                        )}
+                      </td>
+                      <td>
+                        {t.driver_name ? (
+                          <div className="d-flex flex-column">
+                            <strong className="text-dark"><i className="fas fa-user-tie text-muted me-1 small"></i>{t.driver_name}</strong>
+                            <span className="small text-muted" style={{ fontSize: '.7rem' }}>
+                              ID: #{t.DriverID}
                             </span>
                           </div>
                         ) : (
@@ -196,9 +211,9 @@ export default function TripList({
                               className="btn btn-xs btn-success me-1"
                               onClick={() => onCompleteTrip(t.ID)}
                               title="Mark Completed"
-                              style={{ fontSize: '.75rem', padding: '2px 8px' }}
+                              style={{ fontSize: '.72rem', padding: '2px 6px' }}
                             >
-                              <i className="fas fa-check me-1"></i>Complete
+                              <i className="fas fa-check"></i>
                             </button>
                           )}
                           <button

@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 
-export default function AddTrip({ vehicles, customers, onAddTrip, onCancel }) {
+export default function AddTrip({ vehicles, customers, drivers = [], onAddTrip, onCancel }) {
   const [sourceID, setSourceID] = useState('');
   const [destID, setDestID] = useState('');
   const [vehicleID, setVehicleID] = useState('');
+  const [driverID, setDriverID] = useState('');
   const [cargoWeight, setCargoWeight] = useState('');
   const [errors, setErrors] = useState([]);
 
@@ -13,6 +14,11 @@ export default function AddTrip({ vehicles, customers, onAddTrip, onCancel }) {
       id: addr.ID,
       label: `${c.name} - ${addr.house_no ? addr.house_no + ', ' : ''}${addr.area ? addr.area + ', ' : ''}${addr.town}, ${addr.state} (${addr.pincode})`
     }))
+  );
+
+  // Filter for available (active) drivers
+  const availableDrivers = drivers.filter(
+    (d) => (d.status || 'active').toLowerCase() === 'active'
   );
 
   const handleSubmit = (e) => {
@@ -50,6 +56,7 @@ export default function AddTrip({ vehicles, customers, onAddTrip, onCancel }) {
       source_ID: parseInt(sourceID, 10),
       dest_ID: parseInt(destID, 10),
       VehicleID: vehicleID ? parseInt(vehicleID, 10) : null,
+      DriverID: driverID ? parseInt(driverID, 10) : null,
       cargo_weight: parseFloat(cargoWeight),
       status: 'pending'
     });
@@ -145,6 +152,29 @@ export default function AddTrip({ vehicles, customers, onAddTrip, onCancel }) {
                   </div>
                   <span className="small text-muted ps-1" style={{ fontSize: '.7rem' }}>
                     Select a vehicle with sufficient payload capacity.
+                  </span>
+                </div>
+
+                {/* Assigned Driver */}
+                <div className="col-md-6">
+                  <label className="form-label fw-semibold">Assigned Available Driver</label>
+                  <div className="input-group">
+                    <span className="input-group-text"><i className="fas fa-id-card text-muted"></i></span>
+                    <select
+                      className="form-select"
+                      value={driverID}
+                      onChange={(e) => setDriverID(e.target.value)}
+                    >
+                      <option value="">-- Unassigned --</option>
+                      {availableDrivers.map(d => (
+                        <option key={d.DriverID} value={d.DriverID}>
+                          {d.name} ({d.license_no})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <span className="small text-muted ps-1" style={{ fontSize: '.7rem' }}>
+                    Only active/available drivers are listed.
                   </span>
                 </div>
 

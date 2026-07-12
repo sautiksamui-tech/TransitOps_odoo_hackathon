@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 
-export default function EditTrip({ trip, vehicles, customers, onEditTrip, onCancel }) {
+export default function EditTrip({ trip, vehicles, customers, drivers = [], onEditTrip, onCancel }) {
   const [sourceID, setSourceID] = useState('');
   const [destID, setDestID] = useState('');
   const [vehicleID, setVehicleID] = useState('');
+  const [driverID, setDriverID] = useState('');
   const [cargoWeight, setCargoWeight] = useState('');
   const [status, setStatus] = useState('pending');
   const [errors, setErrors] = useState([]);
@@ -16,12 +17,20 @@ export default function EditTrip({ trip, vehicles, customers, onEditTrip, onCanc
     }))
   );
 
+  // Filter for available (active) drivers, but always allow the currently assigned driver
+  const availableDrivers = drivers.filter(
+    (d) => 
+      (d.status || 'active').toLowerCase() === 'active' || 
+      (trip && d.DriverID === trip.DriverID)
+  );
+
   // Pre-populate form fields
   useEffect(() => {
     if (trip) {
       setSourceID(trip.source_ID || '');
       setDestID(trip.dest_ID || '');
       setVehicleID(trip.VehicleID || '');
+      setDriverID(trip.DriverID || '');
       setCargoWeight(trip.cargo_weight !== null ? trip.cargo_weight.toString() : '');
       setStatus(trip.status || 'pending');
     }
@@ -63,6 +72,7 @@ export default function EditTrip({ trip, vehicles, customers, onEditTrip, onCanc
       source_ID: parseInt(sourceID, 10),
       dest_ID: parseInt(destID, 10),
       VehicleID: vehicleID ? parseInt(vehicleID, 10) : null,
+      DriverID: driverID ? parseInt(driverID, 10) : null,
       cargo_weight: parseFloat(cargoWeight),
       status: status
     });
@@ -152,6 +162,26 @@ export default function EditTrip({ trip, vehicles, customers, onEditTrip, onCanc
                       {vehicles.map(v => (
                         <option key={v.VehicleID} value={v.VehicleID}>
                           {v.plate_no} - {v.vehicle_type || 'Unknown'} ({v.maxloadcapacity ? `${v.maxloadcapacity} kg` : 'no cap limit'}) [{v.status || 'available'}]
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Assigned Driver */}
+                <div className="col-md-6">
+                  <label className="form-label fw-semibold">Assigned Driver</label>
+                  <div className="input-group">
+                    <span className="input-group-text"><i className="fas fa-id-card text-muted"></i></span>
+                    <select
+                      className="form-select"
+                      value={driverID}
+                      onChange={(e) => setDriverID(e.target.value)}
+                    >
+                      <option value="">-- Unassigned --</option>
+                      {availableDrivers.map(d => (
+                        <option key={d.DriverID} value={d.DriverID}>
+                          {d.name} ({d.license_no})
                         </option>
                       ))}
                     </select>

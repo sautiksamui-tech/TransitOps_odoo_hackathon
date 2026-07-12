@@ -13,6 +13,9 @@ import EditVehicle from './pages/EditVehicle';
 import TripList from './pages/TripList';
 import AddTrip from './pages/AddTrip';
 import EditTrip from './pages/EditTrip';
+import DriverList from './pages/DriverList';
+import AddDriver from './pages/AddDriver';
+import EditDriver from './pages/EditDriver';
 import Login from './pages/Login';
 import './App.css';
 
@@ -49,6 +52,8 @@ export default function App() {
   const [editingVehicle, setEditingVehicle] = useState(null);
   const [trips, setTrips] = useState([]);
   const [editingTrip, setEditingTrip] = useState(null);
+  const [drivers, setDrivers] = useState([]);
+  const [editingDriver, setEditingDriver] = useState(null);
   const [stats, setStats] = useState(INITIAL_STATS);
   const [activityLog, setActivityLog] = useState(INITIAL_ACTIVITY);
   const [toast, setToast] = useState(null);
@@ -118,6 +123,7 @@ export default function App() {
       fetchCustomers();
       fetchVehicles();
       fetchTrips();
+      fetchDrivers();
     }
   }, [isLoggedIn]);
 
@@ -716,6 +722,187 @@ export default function App() {
       });
   };
 
+  const fetchDrivers = () => {
+    fetch('/api/driver_list')
+      .then((res) => {
+        if (!res.ok) throw new Error('Failed to fetch drivers');
+        return res.json();
+      })
+      .then((data) => {
+        if (data.status === 'success') {
+          setDrivers(data.drivers);
+        }
+      })
+      .catch((err) => {
+        console.error('Error fetching drivers:', err);
+      });
+  };
+
+  const handleAddDriver = (newDriverData) => {
+    fetch('/api/add_driver', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(newDriverData)
+    })
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Failed to add driver');
+        return data;
+      })
+      .then((data) => {
+        if (data.status === 'success') {
+          showToast('success', 'Driver registered successfully!');
+          fetchDrivers();
+          setActivePage('drivers');
+          
+          const now = new Date();
+          setActivityLog(logs => [
+            {
+              action: 'INSERT',
+              module: 'drivers',
+              entity_type: 'driver',
+              title: `Registered driver: ${newDriverData.name}`,
+              timestamp: now.toTimeString().split(' ')[0]
+            },
+            ...logs
+          ]);
+        } else {
+          showToast('error', data.message || 'Failed to add driver.');
+        }
+      })
+      .catch((err) => {
+        showToast('error', err.message);
+      });
+  };
+
+  const handleEditDriver = (updatedDriverData) => {
+    fetch('/api/update_driver', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(updatedDriverData)
+    })
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Failed to update driver');
+        return data;
+      })
+      .then((data) => {
+        if (data.status === 'success') {
+          showToast('success', 'Driver profile updated!');
+          fetchDrivers();
+          setEditingDriver(null);
+          setActivePage('drivers');
+          
+          const now = new Date();
+          setActivityLog(logs => [
+            {
+              action: 'UPDATE',
+              module: 'drivers',
+              entity_type: 'driver',
+              title: `Updated driver profile: ${updatedDriverData.name}`,
+              timestamp: now.toTimeString().split(' ')[0]
+            },
+            ...logs
+          ]);
+        } else {
+          showToast('error', data.message || 'Failed to update driver.');
+        }
+      })
+      .catch((err) => {
+        showToast('error', err.message);
+      });
+  };
+
+  const handleDeleteDriver = (driverId) => {
+    fetch(`/api/delete_driver?DriverID=${driverId}`, {
+      method: 'DELETE'
+    })
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Failed to delete driver');
+        return data;
+      })
+      .then((data) => {
+        if (data.status === 'success') {
+          showToast('info', 'Driver removed from register.');
+          fetchDrivers();
+          
+          const now = new Date();
+          setActivityLog(logs => [
+            {
+              action: 'DELETE',
+              module: 'drivers',
+              entity_type: 'driver',
+              title: `Removed driver ID ${driverId}`,
+              timestamp: now.toTimeString().split(' ')[0]
+            },
+            ...logs
+          ]);
+        } else {
+          showToast('error', data.message || 'Failed to delete driver.');
+        }
+      })
+      .catch((err) => {
+        showToast('error', err.message);
+      });
+  };
+
+  const handleAddDriverDocument = (driverId, docName, docPath) => {
+    fetch('/api/add_driver_document', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        DriverID: driverId,
+        DocumentName: docName,
+        filepath: docPath
+      })
+    })
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Failed to link document');
+        return data;
+      })
+      .then((data) => {
+        if (data.status === 'success') {
+          showToast('success', 'Document linked successfully!');
+          fetchDrivers();
+        } else {
+          showToast('error', data.message || 'Failed to link document.');
+        }
+      })
+      .catch((err) => {
+        showToast('error', err.message);
+      });
+  };
+
+  const handleDeleteDriverDocument = (docId) => {
+    fetch(`/api/delete_driver_document?ID=${docId}`, {
+      method: 'DELETE'
+    })
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Failed to delete document');
+        return data;
+      })
+      .then((data) => {
+        if (data.status === 'success') {
+          showToast('info', 'Document unlinked.');
+          fetchDrivers();
+        } else {
+          showToast('error', data.message || 'Failed to delete document.');
+        }
+      })
+      .catch((err) => {
+        showToast('error', err.message);
+      });
+  };
+
   if (!isLoggedIn) {
     return (
       <div className="login-root">
@@ -776,6 +963,11 @@ export default function App() {
               stats={stats}
               onNavigate={setActivePage}
               activityLog={activityLog}
+              vehicles={vehicles}
+              customers={customers}
+              users={users}
+              trips={trips}
+              drivers={drivers}
             />
           )}
 
@@ -874,6 +1066,7 @@ export default function App() {
             <AddTrip
               vehicles={vehicles}
               customers={customers}
+              drivers={drivers}
               onAddTrip={handleAddTrip}
               onCancel={() => setActivePage('trips')}
             />
@@ -884,6 +1077,7 @@ export default function App() {
               trip={editingTrip}
               vehicles={vehicles}
               customers={customers}
+              drivers={drivers}
               onEditTrip={handleEditTrip}
               onCancel={() => {
                 setEditingTrip(null);
@@ -892,8 +1086,40 @@ export default function App() {
             />
           )}
 
+          {activePage === 'drivers' && (
+            <DriverList
+              drivers={drivers}
+              onDeleteDriver={handleDeleteDriver}
+              onAddDriverClick={() => setActivePage('add-driver')}
+              onEditDriverClick={(d) => {
+                setEditingDriver(d);
+                setActivePage('edit-driver');
+              }}
+              onAddDocument={handleAddDriverDocument}
+              onDeleteDocument={handleDeleteDriverDocument}
+            />
+          )}
+
+          {activePage === 'add-driver' && (
+            <AddDriver
+              onAddDriver={handleAddDriver}
+              onCancel={() => setActivePage('drivers')}
+            />
+          )}
+
+          {activePage === 'edit-driver' && (
+            <EditDriver
+              driver={editingDriver}
+              onEditDriver={handleEditDriver}
+              onCancel={() => {
+                setEditingDriver(null);
+                setActivePage('drivers');
+              }}
+            />
+          )}
+
           {/* Under construction fallbacks for other menus */}
-          {activePage !== 'dashboard' && activePage !== 'users' && activePage !== 'add-user' && activePage !== 'customers' && activePage !== 'add-customer' && activePage !== 'edit-customer' && activePage !== 'vehicle' && activePage !== 'add-vehicle' && activePage !== 'edit-vehicle' && activePage !== 'trips' && activePage !== 'add-trip' && activePage !== 'edit-trip' && (
+          {activePage !== 'dashboard' && activePage !== 'users' && activePage !== 'add-user' && activePage !== 'customers' && activePage !== 'add-customer' && activePage !== 'edit-customer' && activePage !== 'vehicle' && activePage !== 'add-vehicle' && activePage !== 'edit-vehicle' && activePage !== 'drivers' && activePage !== 'add-driver' && activePage !== 'edit-driver' && activePage !== 'trips' && activePage !== 'add-trip' && activePage !== 'edit-trip' && (
             <div className="row justify-content-center align-items-center py-5">
               <div className="col-12 col-md-8 col-lg-6 text-center">
                 <div className="card border-0 shadow-sm p-5" style={{ borderRadius: '16px' }}>
