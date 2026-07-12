@@ -83,6 +83,26 @@ def init_db():
             roleID INT,
             FOREIGN KEY (roleID) REFERENCES role(roleID) ON DELETE SET NULL
         ) ENGINE=InnoDB;
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS Customer (
+            CustomerID INT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(100) NOT NULL,
+            mobile_no VARCHAR(15) NOT NULL,
+            email VARCHAR(100)
+        ) ENGINE=InnoDB;
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS address (
+            ID INT AUTO_INCREMENT PRIMARY KEY,
+            CustomerID INT NOT NULL,
+            house_no VARCHAR(50),
+            area VARCHAR(100),
+            pincode VARCHAR(10),
+            town VARCHAR(100),
+            state VARCHAR(100),
+            FOREIGN KEY (CustomerID) REFERENCES Customer(CustomerID) ON DELETE CASCADE
+        ) ENGINE=InnoDB;
         """
     ]
         
