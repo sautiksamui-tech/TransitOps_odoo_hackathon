@@ -83,6 +83,84 @@ def init_db():
             roleID INT,
             FOREIGN KEY (roleID) REFERENCES role(roleID) ON DELETE SET NULL
         ) ENGINE=InnoDB;
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS Customer (
+            CustomerID INT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(100) NOT NULL,
+            mobile_no VARCHAR(20)
+        ) ENGINE=InnoDB;
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS address (
+            ID INT AUTO_INCREMENT PRIMARY KEY,
+            CustomerID INT NOT NULL,
+            house_no VARCHAR(50),
+            area VARCHAR(150),
+            pincode VARCHAR(6) NOT NULL,
+            town VARCHAR(100),
+            state VARCHAR(100),
+            FOREIGN KEY (CustomerID) REFERENCES Customer(CustomerID) ON DELETE CASCADE
+        ) ENGINE=InnoDB;
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS Trip (
+            ID INT AUTO_INCREMENT PRIMARY KEY,
+            source_ID INT NOT NULL,
+            dest_ID INT NOT NULL,
+            cargo_weight DECIMAL(10, 2),
+            FOREIGN KEY (source_ID) REFERENCES address(ID),
+            FOREIGN KEY (dest_ID) REFERENCES address(ID)
+        ) ENGINE=InnoDB;
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS driver (
+            DriverID INT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(100) NOT NULL,
+            contact_no VARCHAR(20),
+            safety_rating DECIMAL(3, 2)
+        ) ENGINE=InnoDB;
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS driver_document (
+            ID INT AUTO_INCREMENT PRIMARY KEY,
+            DriverID INT NOT NULL,
+            document_name VARCHAR(100) NOT NULL,
+            filepath VARCHAR(255) NOT NULL,
+            expiry_date DATE NULL,
+            FOREIGN KEY (DriverID) REFERENCES driver(DriverID) ON DELETE CASCADE
+        ) ENGINE=InnoDB;
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS vehicle (
+            VehicleID INT AUTO_INCREMENT PRIMARY KEY,
+            plate_no VARCHAR(50) UNIQUE NOT NULL,
+            maxloadcapacity DECIMAL(10, 2),
+            status VARCHAR(20) DEFAULT 'available',
+            vehicle_type VARCHAR(20),
+            odometer DECIMAL(12, 2) DEFAULT 0,
+            acquisition_cost DECIMAL(12, 2)
+        ) ENGINE=InnoDB;
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS vehicle_documents (
+            ID INT AUTO_INCREMENT PRIMARY KEY,
+            VehicleID INT NOT NULL,
+            DocumentName VARCHAR(100) NOT NULL,
+            filepath VARCHAR(255) NOT NULL,
+            Created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            Modified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            FOREIGN KEY (VehicleID) REFERENCES vehicle(VehicleID) ON DELETE CASCADE
+        ) ENGINE=InnoDB;
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS Odometer_reading (
+            ID INT AUTO_INCREMENT PRIMARY KEY,
+            Vehicle_ID INT NOT NULL,
+            reading_value DECIMAL(12, 2) NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (Vehicle_ID) REFERENCES vehicle(VehicleID) ON DELETE CASCADE
+        ) ENGINE=InnoDB;
         """
     ]
         

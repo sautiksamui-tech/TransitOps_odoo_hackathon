@@ -173,6 +173,119 @@ def create_app(test_config=None):
         except Exception as e:
             return {"status": "error", "message": str(e)}, 500
         
+    # --- Customer CRUD APIs ---
+
+    @app.route('/api/customer_list', methods=['GET'])
+    def customer_list():
+        from db import get_db_connection
+        try:
+            with get_db_connection() as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute("SELECT CustomerID, name, mobile_no FROM Customer;")
+                    customers = cursor.fetchall()
+            return {"status": "success", "customers": customers}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}, 500
+
+    @app.route('/api/add_customer', methods=['POST'])
+    def add_customer():
+        from db import get_db_connection
+        
+        data = request.get_json() or {}
+        name = data.get('name') or request.args.get('name')
+        mobile_no = data.get('mobile_no') or request.args.get('mobile_no')
+        
+        if not name:
+            return {"status": "error", "message": "name is required."}, 400
+            
+        try:
+            with get_db_connection() as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute(
+                        "INSERT INTO Customer (name, mobile_no) VALUES (%s, %s);",
+                        (name, mobile_no)
+                    )
+                    customer_id = cursor.lastrowid
+            return {
+                "status": "success",
+                "message": "Customer added successfully.",
+                "customer": {
+                    "CustomerID": customer_id,
+                    "name": name,
+                    "mobile_no": mobile_no
+                }
+            }
+        except Exception as e:
+            return {"status": "error", "message": str(e)}, 500
+
+    @app.route('/api/update_customer', methods=['POST', 'PUT'])
+    def update_customer():
+        from db import get_db_connection
+        
+        data = request.get_json() or {}
+        customer_id = data.get('customerID') or request.args.get('customerID')
+        name = data.get('name') or request.args.get('name')
+        mobile_no = data.get('mobile_no') or request.args.get('mobile_no')
+        
+        if not customer_id:
+            return {"status": "error", "message": "customerID is required."}, 400
+            
+        try:
+            with get_db_connection() as conn:
+                with conn.cursor() as cursor:
+                    # Check if customer exists
+                    cursor.execute("SELECT * FROM Customer WHERE CustomerID = %s;", (customer_id,))
+                    customer = cursor.fetchone()
+                    if not customer:
+                        return {"status": "error", "message": "Customer not found."}, 404
+                        
+                    # Keep existing values if not specified
+                    new_name = name if name is not None else customer['name']
+                    new_mobile = mobile_no if mobile_no is not None else customer['mobile_no']
+                    
+                    cursor.execute(
+                        "UPDATE Customer SET name=%s, mobile_no=%s WHERE CustomerID=%s;",
+                        (new_name, new_mobile, customer_id)
+                    )
+            return {
+                "status": "success",
+                "message": "Customer updated successfully.",
+                "customer": {
+                    "CustomerID": int(customer_id),
+                    "name": new_name,
+                    "mobile_no": new_mobile
+                }
+            }
+        except Exception as e:
+            return {"status": "error", "message": str(e)}, 500
+
+    @app.route('/api/delete_customer', methods=['POST', 'DELETE'])
+    def delete_customer():
+        from db import get_db_connection
+        
+        data = request.get_json() or {}
+        customer_id = data.get('customerID') or request.args.get('customerID')
+        
+        if not customer_id:
+            return {"status": "error", "message": "customerID is required."}, 400
+            
+        try:
+            with get_db_connection() as conn:
+                with conn.cursor() as cursor:
+                    # Check if customer exists
+                    cursor.execute("SELECT CustomerID FROM Customer WHERE CustomerID = %s;", (customer_id,))
+                    existing = cursor.fetchone()
+                    if not existing:
+                        return {"status": "error", "message": "Customer not found."}, 404
+                        
+                    cursor.execute("DELETE FROM Customer WHERE CustomerID = %s;", (customer_id,))
+            return {
+                "status": "success",
+                "message": f"Customer with ID {customer_id} deleted successfully."
+            }
+        except Exception as e:
+            return {"status": "error", "message": str(e)}, 500
+
     return app
 
 if __name__ == '__main__':
