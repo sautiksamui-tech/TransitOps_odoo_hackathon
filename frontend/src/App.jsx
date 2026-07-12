@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import TopNavbar from './components/TopNavbar';
 import Dashboard from './pages/Dashboard';
@@ -50,6 +50,43 @@ export default function App() {
     showToast('info', 'Logged out successfully.');
   };
 
+  const fetchUsers = () => {
+    fetch('/api/users')
+      .then((res) => {
+        if (!res.ok) throw new Error('Failed to fetch users');
+        return res.json();
+      })
+      .then((data) => {
+        if (data.status === 'success') {
+          const mappedUsers = data.users.map((u) => ({
+            id: u.ID,
+            name: u.email.split('@')[0].replace(/[^a-zA-Z]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'N/A',
+            email: u.email,
+            phone: 'N/A',
+            role: u.RoleName || 'Operator',
+            status: 'Active',
+            addedDate: '12 Jul 2026'
+          }));
+          setUsers(mappedUsers);
+
+          // Update stats operator count
+          setStats((prev) => ({
+            ...prev,
+            operators: data.users.length,
+          }));
+        }
+      })
+      .catch((err) => {
+        console.error('Error fetching users:', err);
+      });
+  };
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      fetchUsers();
+    }
+  }, [isLoggedIn]);
+
   const handleToggleStatus = (id) => {
     setUsers((prev) =>
       prev.map((u) => {
@@ -79,47 +116,85 @@ export default function App() {
     const userToDelete = users.find(u => u.id === id);
     if (!userToDelete) return;
     if (window.confirm(`Are you sure you want to permanently delete user ${userToDelete.name}?`)) {
-      setUsers((prev) => prev.filter((u) => u.id !== id));
-      showToast('error', `User ${userToDelete.name} has been deleted.`);
-      const now = new Date();
-      setActivityLog(logs => [
-        {
-          action: 'DELETE',
-          module: 'users',
-          entity_type: 'user',
-          title: `User deleted: ${userToDelete.name} (${userToDelete.email})`,
-          timestamp: now.toTimeString().split(' ')[0]
+      fetch('/api/remove_user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
         },
-        ...logs
-      ]);
+        body: JSON.stringify({ userID: id })
+      })
+        .then((res) => {
+          if (!res.ok) throw new Error('Failed to delete user');
+          return res.json();
+        })
+        .then((data) => {
+          if (data.status === 'success') {
+            showToast('error', `User ${userToDelete.name} has been deleted.`);
+            fetchUsers();
+            const now = new Date();
+            setActivityLog(logs => [
+              {
+                action: 'DELETE',
+                module: 'users',
+                entity_type: 'user',
+                title: `User deleted: ${userToDelete.name} (${userToDelete.email})`,
+                timestamp: now.toTimeString().split(' ')[0]
+              },
+              ...logs
+            ]);
+          } else {
+            showToast('error', data.message || 'Failed to delete user.');
+          }
+        })
+        .catch((err) => {
+          showToast('error', err.message);
+        });
     }
   };
 
   const handleAddUser = (newUserData) => {
-    const nextId = users.length > 0 ? Math.max(...users.map((u) => u.id)) + 1 : 1;
-    const newUser = { id: nextId, ...newUserData };
-    setUsers((prev) => [newUser, ...prev]);
-
-    // Increment operator counts if Teacher or Operator role is selected
-    if (newUserData.role === 'Teacher' || newUserData.role === 'Operator') {
-      setStats((prev) => ({ ...prev, operators: prev.operators + 1 }));
-    }
-
-    // Add entry to activity logs
-    const now = new Date();
-    setActivityLog(logs => [
-      {
-        action: 'INSERT',
-        module: 'users',
-        entity_type: 'user',
-        title: `User added: ${newUserData.name} (${newUserData.email})`,
-        timestamp: now.toTimeString().split(' ')[0]
+    fetch('/api/add_user', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
       },
-      ...logs
-    ]);
+      body: JSON.stringify({
+        email: newUserData.email,
+        password: newUserData.password,
+        roleID: newUserData.roleID
+      })
+    })
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.message || 'Failed to create user');
+        }
+        return data;
+      })
+      .then((data) => {
+        if (data.status === 'success') {
+          showToast('success', `User ${newUserData.name} added successfully.`);
+          fetchUsers();
+          setActivePage('users');
 
-    showToast('success', `User ${newUserData.name} added successfully.`);
-    setActivePage('users');
+          const now = new Date();
+          setActivityLog(logs => [
+            {
+              action: 'INSERT',
+              module: 'users',
+              entity_type: 'user',
+              title: `User added: ${newUserData.name} (${newUserData.email})`,
+              timestamp: now.toTimeString().split(' ')[0]
+            },
+            ...logs
+          ]);
+        } else {
+          showToast('error', data.message || 'Failed to add user.');
+        }
+      })
+      .catch((err) => {
+        showToast('error', err.message);
+      });
   };
 
   if (!isLoggedIn) {

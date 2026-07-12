@@ -45,6 +45,7 @@ const GROUP_COLORS = {
 };
 
 export default function AddUser({ onAddUser, onCancel }) {
+  const [dbRoles, setDbRoles] = useState([]);
   const [roleId, setRoleId] = useState('');
   const [staffId, setStaffId] = useState('');
   const [name, setName] = useState('');
@@ -59,6 +60,30 @@ export default function AddUser({ onAddUser, onCancel }) {
   const [endTime, setEndTime] = useState('');
   const [emailOtp, setEmailOtp] = useState(false);
   const [whatsappOtp, setWhatsappOtp] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/roles')
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === 'success') {
+          const mapped = data.roles.map(r => {
+            const staticMatch = ROLES.find(sr => sr.name.toLowerCase() === r.RoleName.toLowerCase());
+            return {
+              id: r.roleID,
+              name: r.RoleName,
+              position: staticMatch ? staticMatch.position : 'operator',
+              description: staticMatch ? staticMatch.description : 'Access for custom role'
+            };
+          });
+          setDbRoles(mapped);
+        }
+      })
+      .catch(err => {
+        console.error('Error fetching roles in AddUser:', err);
+      });
+  }, []);
+
+  const activeRoles = dbRoles.length > 0 ? dbRoles : ROLES;
 
   const [errors, setErrors] = useState([]);
   const [pwdVisible, setPwdVisible] = useState(false);
@@ -91,7 +116,7 @@ export default function AddUser({ onAddUser, onCancel }) {
 
   // Reset staff selection when role changes
   useEffect(() => {
-    const selectedRole = ROLES.find(r => r.id === parseInt(roleId));
+    const selectedRole = activeRoles.find(r => r.id === parseInt(roleId));
     if (!selectedRole || selectedRole.position !== 'teacher') {
       setStaffId('');
     }
@@ -110,7 +135,7 @@ export default function AddUser({ onAddUser, onCancel }) {
     else if (password.length < 6) errs.push('Password must be at least 6 characters.');
     else if (password !== confirmPassword) errs.push('Passwords do not match.');
 
-    const selectedRole = ROLES.find(r => r.id === parseInt(roleId));
+    const selectedRole = activeRoles.find(r => r.id === parseInt(roleId));
     if (selectedRole && selectedRole.position === 'teacher' && !staffId) {
       errs.push('A crew member must be selected for the Operational role.');
     }
@@ -137,12 +162,14 @@ export default function AddUser({ onAddUser, onCancel }) {
     }
 
     // Call submit handler with data
-    const roleData = ROLES.find(r => r.id === parseInt(roleId));
+    const roleData = activeRoles.find(r => r.id === parseInt(roleId));
     const linkedStaffObj = STAFF_MEMBERS.find(s => s.id === parseInt(staffId));
     onAddUser({
       name,
       email,
       phone,
+      password,
+      roleID: parseInt(roleId),
       role: roleData ? roleData.name : 'Custom',
       linkedStaff: linkedStaffObj ? linkedStaffObj.name : null,
       status: 'Active',
@@ -159,7 +186,7 @@ export default function AddUser({ onAddUser, onCancel }) {
     });
   };
 
-  const selectedPermissions = roleId ? ROLE_PERMISSIONS[roleId] : null;
+  const selectedPermissions = roleId ? (ROLE_PERMISSIONS[roleId] || ROLE_PERMISSIONS[2]) : null;
 
   return (
     <div className="container-fluid py-3 text-start">
@@ -208,7 +235,7 @@ export default function AddUser({ onAddUser, onCancel }) {
                         onChange={(e) => setRoleId(e.target.value)}
                       >
                         <option value="">-- Select Role --</option>
-                        {ROLES.map((r) => (
+                        {activeRoles.map((r) => (
                           <option key={r.id} value={r.id}>{r.name}</option>
                         ))}
                       </select>
@@ -217,7 +244,7 @@ export default function AddUser({ onAddUser, onCancel }) {
                   </div>
 
                   {/* Staff Select (Only visible if role position is teacher) */}
-                  {roleId && ROLES.find(r => r.id === parseInt(roleId))?.position === 'teacher' && (
+                  {roleId && activeRoles.find(r => r.id === parseInt(roleId))?.position === 'teacher' && (
                     <div className="col-md-6" id="staffSelectGroup">
                       <label className="form-label fw-semibold">Link Fleet Personnel <span className="text-danger">*</span></label>
                       <div className="input-group">
@@ -466,7 +493,7 @@ export default function AddUser({ onAddUser, onCancel }) {
                 Role Permissions Preview
               </h6>
               <small className="text-muted">
-                {roleId ? ROLES.find(r => r.id === parseInt(roleId))?.name : 'Select a role to see its permissions'}
+                {roleId ? activeRoles.find(r => r.id === parseInt(roleId))?.name : 'Select a role to see its permissions'}
               </small>
             </div>
             <div className="card-body p-4 pt-2">
@@ -478,7 +505,7 @@ export default function AddUser({ onAddUser, onCancel }) {
               ) : (
                 <div>
                   <p className="text-muted small mb-3">
-                    {ROLES.find(r => r.id === parseInt(roleId))?.description}
+                    {activeRoles.find(r => r.id === parseInt(roleId))?.description}
                   </p>
                   <div className="d-flex flex-column gap-2">
                     {Object.entries(selectedPermissions).map(([group, actions]) => {

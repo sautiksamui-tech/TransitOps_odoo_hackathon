@@ -9,17 +9,12 @@ const SIDEBAR_ITEMS = [
 export default function Sidebar({ collapsed, activePage, onChangePage, onLogout }) {
   return (
     <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`} id="sidebar">
-      <div className="sidebar-header" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '14px 16px' }}>
-        <img
-          src="https://devindia.in/assets/images/logo.png"
-          alt="Logo"
-          style={{ height: '46px', width: 'auto', maxWidth: '60px', objectFit: 'contain', flexShrink: 0 }}
-        />
+      <div className="sidebar-header" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '16px 20px' }}>
         <div style={{ flex: 1, minWidth: 0 }} className="logo-text">
-          <div style={{ fontSize: '.85rem', fontWeight: 700, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <div style={{ fontSize: '1.25rem', fontWeight: 800, lineHeight: 1.2, letterSpacing: '-0.5px', color: 'var(--primary)' }}>
             TransitOps
           </div>
-          <div style={{ fontSize: '.65rem', color: 'var(--text-muted)', marginTop: '2px' }}>Operations Portal</div>
+          <div style={{ fontSize: '.65rem', color: 'var(--text-muted)', marginTop: '3px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Operations Portal</div>
         </div>
       </div>
       <nav className="sidebar-nav">

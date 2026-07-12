@@ -147,18 +147,9 @@ export default function Login({ onLoginSuccess }) {
 
             {/* Header branding */}
             <div className="text-start z-1">
-              <div className="d-flex align-items-center gap-2 mb-3">
-                <div className="bg-white rounded-3 p-2 d-flex align-items-center justify-content-center" style={{ width: '48px', height: '48px' }}>
-                  <img
-                    src="https://devindia.in/assets/images/logo.png"
-                    alt="Logo"
-                    style={{ height: '32px', width: 'auto', objectFit: 'contain' }}
-                  />
-                </div>
-                <div>
-                  <h4 className="fw-bold mb-0 text-white" style={{ fontFamily: 'var(--font-display)', letterSpacing: '-0.5px' }}>TransitOps</h4>
-                  <small className="opacity-75" style={{ fontSize: '0.7rem', fontWeight: 600 }}>Operations Control</small>
-                </div>
+              <div className="d-flex flex-column mb-3">
+                <h4 className="fw-bold mb-0 text-white" style={{ fontFamily: 'var(--font-display)', letterSpacing: '-0.5px', fontSize: '1.5rem' }}>TransitOps</h4>
+                <small className="opacity-75 text-uppercase" style={{ fontSize: '0.65rem', fontWeight: 600, letterSpacing: '1px' }}>Operations Control</small>
               </div>
             </div>
 
@@ -206,13 +197,9 @@ export default function Login({ onLoginSuccess }) {
             
             {/* Header Title */}
             <div className="text-start mb-4">
-              <div className="d-flex align-items-center gap-2 mb-3 d-lg-none">
-                <img
-                  src="https://devindia.in/assets/images/logo.png"
-                  alt="Logo"
-                  style={{ height: '36px', width: 'auto' }}
-                />
+              <div className="d-flex flex-column mb-3 d-lg-none">
                 <h4 className="fw-bold mb-0 text-dark" style={{ fontFamily: 'var(--font-display)', letterSpacing: '-0.5px' }}>TransitOps</h4>
+                <small className="text-muted text-uppercase" style={{ fontSize: '0.6rem', fontWeight: 600, letterSpacing: '0.5px' }}>Operations Control</small>
               </div>
               
               <h3 className="fw-bold text-dark mb-1" style={{ fontFamily: 'var(--font-display)', letterSpacing: '-0.5px' }}>Welcome Back</h3>
