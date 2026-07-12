@@ -6,7 +6,7 @@ const SIDEBAR_ITEMS = [
   { key: 'vehicle', icon: 'fas fa-bus', label: 'Vehicle' },
 ];
 
-export default function Sidebar({ collapsed, activePage, onChangePage }) {
+export default function Sidebar({ collapsed, activePage, onChangePage, onLogout }) {
   return (
     <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`} id="sidebar">
       <div className="sidebar-header" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '14px 16px' }}>
@@ -42,7 +42,7 @@ export default function Sidebar({ collapsed, activePage, onChangePage }) {
       </nav>
       <div className="sidebar-footer">
         <div className="sidebar-footer-content">
-          <a href="#" className="btn btn-sm btn-outline-danger w-100 mb-3" style={{ borderRadius: 'var(--radius-sm)' }}>
+          <a href="#" onClick={(e) => { e.preventDefault(); onLogout(); }} className="btn btn-sm btn-outline-danger w-100 mb-3" style={{ borderRadius: 'var(--radius-sm)' }}>
             <i className="fas fa-sign-out-alt me-1"></i> Logout
           </a>
           <div className="d-flex flex-column align-items-center text-center gap-1 pt-2 border-top" style={{ borderColor: 'var(--border-color)' }}>

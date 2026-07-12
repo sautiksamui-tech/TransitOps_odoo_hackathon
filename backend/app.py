@@ -1,5 +1,11 @@
 import os
+import base64
+import json
+import hmac
+import hashlib
+import time
 from flask import Flask, request
+from werkzeug.security import check_password_hash
 
 # Load environment variables from .env file if it exists
 try:
@@ -9,6 +15,23 @@ except ImportError:
     pass
 
 from flask_cors import CORS
+
+def generate_jwt(payload, secret):
+    header = {"alg": "HS256", "typ": "JWT"}
+    
+    def base64url_encode(data):
+        if isinstance(data, dict):
+            data = json.dumps(data).encode('utf-8')
+        return base64.urlsafe_b64encode(data).replace(b'=', b'').decode('utf-8')
+        
+    header_encoded = base64url_encode(header)
+    payload_encoded = base64url_encode(payload)
+    
+    signature_base = f"{header_encoded}.{payload_encoded}".encode('utf-8')
+    signature = hmac.new(secret.encode('utf-8'), signature_base, hashlib.sha256).digest()
+    signature_encoded = base64.urlsafe_b64encode(signature).replace(b'=', b'').decode('utf-8')
+    
+    return f"{header_encoded}.{payload_encoded}.{signature_encoded}"
 
 def create_app(test_config=None):
     app = Flask(__name__)
@@ -40,14 +63,15 @@ def create_app(test_config=None):
     @app.route('/api/login', methods=['POST'])
     def login():
         from db import get_db_connection
-        from werkzeug.security import check_password_hash
+     
         
-        email = request.args.get('email')
-        password = request.args.get('password')
-        role_id = request.args.get('roleID')
+        data = request.get_json() or {}
+        email = data.get('email') or request.args.get('email')
+        password = data.get('password') or request.args.get('password')
+        role_id = data.get('roleID') or request.args.get('roleID')
         
         if not email or not password or not role_id:
-            return {"status": "error", "message": "email, password, and roleID query parameters are required."}, 400
+            return {"status": "error", "message": "email, password, and roleID parameters are required."}, 400
             
         try:
             with get_db_connection() as conn:
@@ -61,9 +85,17 @@ def create_app(test_config=None):
             if str(user['roleID']) != str(role_id):
                 return {"status": "error", "message": "Invalid role specified for this user."}, 401
                 
+            token = generate_jwt({
+                "user_id": user['ID'],
+                "email": user['email'],
+                "role_id": user['roleID'],
+                "exp": int(time.time()) + 86400  # 24 hour expiry
+            }, app.config['SECRET_KEY'])
+
             return {
                 "status": "success",
                 "message": "Login successful.",
+                "token": token,
                 "user": {
                     "ID": user['ID'],
                     "email": user['email'],
@@ -140,9 +172,13 @@ def create_app(test_config=None):
             }
         except Exception as e:
             return {"status": "error", "message": str(e)}, 500
-
+        
     return app
 
 if __name__ == '__main__':
+    from werkzeug.security import generate_password_hash
+    print(generate_password_hash('12345'))
     app = create_app()
     app.run(debug=True, port=5000)
+
+

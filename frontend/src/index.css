@@ -681,3 +681,26 @@ a {
     transform: translateX(2px);
 }
 .btn-xs { padding:.25rem .5rem; font-size:.75rem; }
+
+/* Login Page Custom Enhancements */
+.login-root {
+  min-height: 100vh;
+  background-color: var(--body-bg);
+}
+.login-root .form-control:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 4px rgba(11, 77, 187, 0.15) !important;
+}
+.login-root .input-group:focus-within .input-group-text {
+  border-color: var(--primary) !important;
+  color: var(--primary) !important;
+}
+.login-root .btn-primary {
+  transition: var(--transition) !important;
+}
+.login-root .btn-primary:hover {
+  background-color: var(--primary-dark) !important;
+  border-color: var(--primary-dark) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 20px rgba(11, 77, 187, 0.25) !important;
+}

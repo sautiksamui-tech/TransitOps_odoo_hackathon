@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-export default function TopNavbar({ collapsed, onToggleSidebar, activePage, userName = 'Administrator' }) {
+export default function TopNavbar({ collapsed, onToggleSidebar, activePage, userName = 'Administrator', onLogout }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [sessionOpen, setSessionOpen] = useState(false);
   const [theme, setTheme] = useState('light');
@@ -127,7 +127,7 @@ export default function TopNavbar({ collapsed, onToggleSidebar, activePage, user
               </span>
             </li>
             <li><hr className="dropdown-divider" /></li>
-            <li><a className="dropdown-item text-danger" href="#"><i className="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+            <li><a className="dropdown-item text-danger" href="#" onClick={(e) => { e.preventDefault(); onLogout(); }}><i className="fas fa-sign-out-alt me-2"></i>Logout</a></li>
           </ul>
         </div>
       </div>

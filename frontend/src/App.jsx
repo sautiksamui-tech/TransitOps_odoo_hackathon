@@ -4,6 +4,7 @@ import TopNavbar from './components/TopNavbar';
 import Dashboard from './pages/Dashboard';
 import UserList from './pages/UserList';
 import AddUser from './pages/AddUser';
+import Login from './pages/Login';
 import './App.css';
 
 const INITIAL_USERS = [
@@ -29,6 +30,7 @@ const INITIAL_ACTIVITY = [
 ];
 
 export default function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('token'));
   const [activePage, setActivePage] = useState('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [users, setUsers] = useState(INITIAL_USERS);
@@ -39,6 +41,13 @@ export default function App() {
   const showToast = (type, message) => {
     setToast({ type, message });
     setTimeout(() => setToast(null), 4000);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setIsLoggedIn(false);
+    showToast('info', 'Logged out successfully.');
   };
 
   const handleToggleStatus = (id) => {
@@ -113,6 +122,28 @@ export default function App() {
     setActivePage('users');
   };
 
+  if (!isLoggedIn) {
+    return (
+      <div className="login-root">
+        {toast && (
+          <div className={`notif-toast ${toast.type}`}>
+            <div className="notif-icon">
+              {toast.type === 'success' && <i className="fas fa-check-circle"></i>}
+              {toast.type === 'error' && <i className="fas fa-exclamation-circle"></i>}
+              {toast.type === 'info' && <i className="fas fa-info-circle"></i>}
+            </div>
+            <div className="notif-body text-start">{toast.message}</div>
+            <button className="notif-close" onClick={() => setToast(null)}>&times;</button>
+          </div>
+        )}
+        <Login onLoginSuccess={() => {
+          setIsLoggedIn(true);
+          showToast('success', 'Logged in successfully as Administrator.');
+        }} />
+      </div>
+    );
+  }
+
   return (
     <div className="wrapper">
       {/* Toast Notification Container */}
@@ -133,6 +164,7 @@ export default function App() {
         collapsed={sidebarCollapsed}
         activePage={activePage}
         onChangePage={setActivePage}
+        onLogout={handleLogout}
       />
 
       {/* Main Content Area */}
@@ -141,6 +173,7 @@ export default function App() {
           collapsed={sidebarCollapsed}
           onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
           activePage={activePage}
+          onLogout={handleLogout}
         />
 
         <div className="container-fluid py-4 px-3" style={{ flexGrow: 1 }}>
